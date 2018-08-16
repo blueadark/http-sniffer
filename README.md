@@ -12,6 +12,7 @@ $ scons
 Get your live interface with ifconfig in terminal, e.g. en0, then
 
 $ ./bin/http-sniffer -i en0
+
 Or store output flows as json
 
 $ ./bin/http-sniffer -i en0 -o output.json
