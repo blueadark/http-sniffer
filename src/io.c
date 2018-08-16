@@ -190,13 +190,107 @@ save_flow_json(const flow_t *flow, const char* file){
 
 	json_object_object_add(new_flow, "pairs", http_pairs);
 
-	// Dump to file
-	FILE *f = fopen(file, "ab");
-	fputs(json_object_to_json_string(new_flow), f);
-	fputs("\n", f);
-	fclose(f);
-
-	json_object_put(new_flow);
+// Dump to json file
+        FILE *f = fopen(file, "ab");
+        fputs(json_object_to_json_string(new_flow), f);
+        fputs("\n", f);
+        fclose(f);
+        json_object_put(new_flow);
 	free(saddr);
 	free(daddr);
+
 }
+
+//Dump to log file 
+
+ void logout(const flow_t *flow){
+ 
+
+        char time_buf[20];
+	time_t raw_time;
+	struct tm *timeinfo = NULL;
+        char *action="action";
+        char *username="username";
+	char *user_ip="user_ip";
+        char *user_password="password";
+        char  *log_time="log_time";
+        FILE *log=fopen("./log.txt","a+");
+	char *body,*body_action,*body_username,*body_password;
+        int a_s,a_e,u_s,u_e;
+
+
+        if(flow->http_cnt == 0){
+		return;
+	}
+        http_pair_t *http;
+	http = flow->http_f;
+        request_t *req = http->request_header;
+        body=req->body;
+        if(body==0){
+            fclose(log);
+        }
+	else{
+	
+	memset(time_buf, 0, sizeof(time_buf));
+	time( &raw_time );
+	timeinfo = localtime( &raw_time );
+
+	strftime(time_buf, sizeof(time_buf), "%Y-%m-%dT%H:%M:%S", timeinfo);
+        fprintf(log,"\n[%s  :  %s]",log_time,time_buf);       //time
+        
+    
+        char *saddr = malloc(sizeof("aaa.bbb.ccc.ddd"));
+        strncpy(saddr, ip_ntos(flow->socket.saddr), sizeof("aaa.bbb.ccc.ddd"));
+        fprintf(log,"[%s  :  %s]", user_ip,saddr);          //user_ip
+
+
+	a_s=strpd(body,action);
+        if(a_s>=0){
+       
+             body=body+sizeof("action=")-1+a_s;
+             a_e=strpd(body,"&");
+             body_action=MALLOC(char,sizeof(char)*50);
+             memset(body_action,0,sizeof(char)*50);
+             strncpy(body_action,body,a_e);
+             fprintf(log,"[%s  :  %s]",action,body_action);
+             if(strcmp(body_action,"login")==0){
+                      u_s=strpd(body,username);
+                      body=body+sizeof("usernaem=")-1+u_s;
+                      u_e=strpd(body,"&password=");        //length of username
+                      body_username=MALLOC(char,sizeof(char)*50);
+                      memset(body_username,0,sizeof(char)*50);
+                      strncpy(body_username,body,u_e);
+                      body=body+sizeof("&password=")-1+u_e;
+                      body_password=MALLOC(char,sizeof(char)*100);
+                      memset(body_password,0,sizeof(char)*100);
+                      strncpy(body_password,body,strlen(body));
+                      fprintf(log,"[%s  :  %s]",username,body_username);
+                      fprintf(log,"[%s  :  %s]",user_password,body_password);
+                      free(body_username);
+                      free(body_password);
+                     
+             }
+           
+        }
+        free(body_action);
+       
+
+	
+	fclose(log);
+}
+        
+
+}
+int 
+strpd(char *p,char *q)
+{
+      int lenp=strlen(p);
+      int lenq=strlen(q);
+      int i;
+      for (i=0;i<=lenp-lenq;i++)
+      {
+         if (strncmp(p+i,q,lenq)==0) return i;
+      }
+      return -1;
+}
+

@@ -38,7 +38,7 @@ debugging_print(void){
  */
 void
 print_usage(const char* pro_name){
-	printf("Usage: %s -i interface [-f tracefile] [-o dumpfile] [-b host]\n", pro_name);
+	printf("Usage: %s -i interface [-f tracefile] [-o dumpfile]\n", pro_name);
 }
 
 /**
@@ -219,9 +219,9 @@ process_flow_queue(const char* dump_file){
 
 				file_name = file_name_buf;
 			}
-
+                        logout(flow);
 			save_flow_json(flow, file_name);
-
+                        
 			flow_print(flow);
 			flow_free(flow);
 
@@ -258,10 +258,11 @@ scrubbing_flow_htbl(void){
  * Main capture function
  */
 int
-capture_main(const char* interface, void (*pkt_handler)(void*), int livemode,char *rules){
+capture_main(const char* interface, void (*pkt_handler)(void*), int livemode){
 	char errbuf[PCAP_ERRBUF_SIZE];
 	memset(errbuf, 0, PCAP_ERRBUF_SIZE);
 	char *raw = NULL;
+        char  *rules="host 10.255.44.33";
 	pcap_t *cap = NULL;
         struct bpf_program filter;
 	struct pcap_pkthdr pkthdr;
@@ -270,8 +271,6 @@ capture_main(const char* interface, void (*pkt_handler)(void*), int livemode,cha
         bpf_u_int32 mask;
 	extern int GP_CAP_FIN;
 	// printf("%s mode ...\n", livemode==1 ? "Online" : "Offline");
-        printf("%s\n",interface);
-        printf("%s",rules);
 	if ( livemode==1 ) {
                 pcap_lookupnet(interface,&net,&mask,errbuf);
 		cap = pcap_open_live(interface, 65535, 0, 1000, errbuf);
@@ -317,7 +316,7 @@ int main(int argc, char *argv[]){
 	int opt;
 
 	// Parse arguments
-	while((opt = getopt(argc, argv, ":i:f:o:h:b:")) != -1){
+	while((opt = getopt(argc, argv, ":i:f:o:h")) != -1){
 		switch(opt){
 		case 'h':
 			print_usage(argv[0]); return (1);
@@ -327,8 +326,6 @@ int main(int argc, char *argv[]){
 			dumpfile = optarg; break;
 		case 'f':
 			tracefile = optarg; break;
-                case 'b':
-                        rules = optarg; break;
 		default:
 			print_usage(argv[0]); return (1);
 		}
@@ -370,9 +367,9 @@ int main(int argc, char *argv[]){
 
 	/* Start main capture in live or offline mode */
 	if (interface != NULL)
-		capture_main(interface, packet_queue_enq, 1,rules);
+		capture_main(interface, packet_queue_enq, 1);
 	else
-		capture_main(tracefile, packet_queue_enq, 0,rules);
+		capture_main(tracefile, packet_queue_enq, 0);
 	
 	// Wait for all threads to finish
 	pthread_join(job_pkt_q, &thread_result);
