@@ -8,6 +8,7 @@ Run scons in root folder to compile:
 
 $ cd http-sniffer
 $ scons
+
 Get your live interface with ifconfig in terminal, e.g. en0, then
 
 $ ./bin/http-sniffer -i en0
